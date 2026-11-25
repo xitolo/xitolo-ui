@@ -1,0 +1,74 @@
+<div class="shell">
+  <aside class="side" [class.open]="sideOpen()">
+    <div class="brand"><a routerLink="/admin"><app-logo [size]="24" [light]="true" suffix="admin" /></a></div>
+    <nav>
+      @for (g of groups; track g.title) {
+        <div class="grp">{{ g.title }}</div>
+        @for (n of g.items; track n.path) {
+          <a [routerLink]="n.path" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: n.path === '/admin' }">
+            <app-icon [name]="n.icon" [size]="18" />
+            <span>{{ n.label }}</span>
+            @if (n.badge && n.badge(); as b) { <i>{{ b }}</i> }
+          </a>
+        }
+      }
+    </nav>
+    <div class="side-foot">
+      <a routerLink="/" target="_blank"><app-icon name="store" [size]="18" /> Ver loja <app-icon name="external" [size]="14" /></a>
+    </div>
+  </aside>
+  @if (sideOpen()) { <div class="overlay mobile-only" (click)="sideOpen.set(false)"></div> }
+
+  <div class="main">
+    <header class="top">
+      <button type="button" class="icon-btn mobile-only" (click)="sideOpen.set(true)" aria-label="Menu"><app-icon name="menu" /></button>
+      <form class="search-box quick" (submit)="$event.preventDefault(); goToOrder()">
+        <app-icon name="search" />
+        <input placeholder="Procurar encomenda (nº, cliente, telefone)…" [value]="quick()" (input)="quick.set($any($event.target).value)" aria-label="Procurar encomenda" />
+      </form>
+      <div class="spacer"></div>
+      @if (data.syncing()) { <span class="sync"><span class="spinner sm"></span> a sincronizar</span> }
+
+      <div class="pop-wrap">
+        <button type="button" class="icon-btn" (click)="bellOpen.set(!bellOpen()); menuOpen.set(false)" aria-label="Notificações">
+          <app-icon name="bell" />
+          @if (alerts.total()) { <span class="count-badge">{{ alerts.total() > 99 ? '99+' : alerts.total() }}</span> }
+        </button>
+        @if (bellOpen()) {
+          <div class="pop bell">
+            <div class="pop-h">Notificações</div>
+            @for (a of alerts.alerts(); track a.id) {
+              <a class="al" [routerLink]="a.link" [queryParams]="a.query">
+                <span class="ai" [class]="a.tone"><app-icon [name]="a.icon" [size]="16" /></span>
+                <span class="grow"><b>{{ a.count }} · {{ a.title }}</b><small>{{ a.text }}</small></span>
+                <app-icon name="chevron-right" [size]="16" />
+              </a>
+            } @empty {
+              <div class="none">Tudo em dia ✓</div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="pop-wrap">
+        <button type="button" class="me" (click)="menuOpen.set(!menuOpen()); bellOpen.set(false)">
+          <span class="av">DA</span><span class="hide-sm"><b>{{ admin.name }}</b><small>Administrador</small></span>
+          <app-icon name="chevron-down" [size]="16" />
+        </button>
+        @if (menuOpen()) {
+          <div class="pop menu">
+            <div class="pop-h">{{ admin.email }}</div>
+            <a routerLink="/" target="_blank"><app-icon name="store" [size]="16" /> Abrir a loja</a>
+            <button type="button" (click)="resetDemo()"><app-icon name="refresh" [size]="16" /> Repor dados de demonstração</button>
+            <button type="button" (click)="logout()"><app-icon name="logout" [size]="16" /> Terminar sessão</button>
+          </div>
+        }
+      </div>
+    </header>
+    @if (bellOpen() || menuOpen()) { <div class="click-away" (click)="bellOpen.set(false); menuOpen.set(false)"></div> }
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

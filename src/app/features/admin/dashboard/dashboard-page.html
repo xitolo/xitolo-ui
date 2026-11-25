@@ -1,0 +1,113 @@
+<div class="page-head">
+  <div><h1>Dashboard</h1><p>Resultados calculados a partir das encomendas, pagamentos e entregas registados.</p></div>
+  <app-period-filter [(range)]="range" />
+</div>
+
+<!-- Financeiro -->
+<div class="sec-h">
+  <h2>Indicadores financeiros</h2>
+  <button type="button" class="link small" (click)="showHelp.set(!showHelp())"><app-icon name="info" [size]="14" /> Como são calculados?</button>
+</div>
+@if (showHelp()) {
+  <div class="alert help">
+    <ul>
+      <li><b>Valor vendido</b> — total das encomendas não canceladas (inclui pendentes).</li>
+      <li><b>Total recebido</b> — só pagamentos com estado “confirmado”.</li>
+      <li><b>Pagamentos pendentes</b> — pagamentos ainda não confirmados de encomendas activas.</li>
+      <li><b>Receita bruta</b> — produtos + taxas de entrega das encomendas pagas, antes de descontos.</li>
+      <li><b>Receita líquida estimada</b> — receita bruta − cupões − comissões M-Pesa/e-Mola (1,5%) − IVA incluído ({{ vat }}%).</li>
+      <li><b>Lucro estimado</b> — receita líquida − custo de aquisição dos produtos vendidos − custo operacional das entregas.</li>
+    </ul>
+  </div>
+}
+<div class="kpis k4">
+  <app-kpi label="Total de vendas (valor vendido)" [value]="m(fin().soldValue)" [sub]="fin().activeOrdersCount + ' encomendas activas'" icon="chart" tone="brand" />
+  <app-kpi label="Total recebido" [value]="m(fin().receivedValue)" [sub]="fin().paidOrdersCount + ' encomendas pagas'" icon="check-circle" tone="success" />
+  <app-kpi label="Pagamentos pendentes" [value]="m(fin().pendingValue)" sub="Ainda não contam como receita" icon="clock" tone="warning" />
+  <app-kpi label="Valor médio por encomenda" [value]="m(fin().averageOrderValue)" icon="bag" tone="info" />
+  <app-kpi label="Receita bruta" [value]="m(fin().grossRevenue)" [sub]="'Descontos: ' + m(fin().discounts)" icon="wallet" />
+  <app-kpi label="Receita líquida estimada" [value]="m(fin().netRevenue)" [sub]="'IVA ' + m(fin().vat) + ' · comissões ' + m(fin().paymentFees)" icon="bank" />
+  <app-kpi label="Lucro estimado" [value]="m(fin().estimatedProfit)" [sub]="'Custo produtos ' + m(fin().productCost)" icon="sparkle" [tone]="fin().estimatedProfit >= 0 ? 'success' : 'danger'" />
+  <app-kpi label="Encomendas canceladas" [value]="m(fin().cancelledValue)" [sub]="fin().cancelledCount + ' canceladas · ' + m(fin().refundedValue) + ' reembolsado'" icon="x" tone="danger" />
+</div>
+
+<!-- Gráficos de vendas -->
+<div class="g2 wide-left">
+  <div class="card">
+    <div class="card-head">
+      <h3>Vendas e receitas</h3>
+      <div class="segmented">
+        <button type="button" [class.on]="granularity() === 'day'" (click)="granularity.set('day')">Dia</button>
+        <button type="button" [class.on]="granularity() === 'week'" (click)="granularity.set('week')">Semana</button>
+        <button type="button" [class.on]="granularity() === 'month'" (click)="granularity.set('month')">Mês</button>
+      </div>
+    </div>
+    <div class="card-body"><app-line-chart [labels]="lineLabels()" [series]="lineSeries()" ariaLabel="Evolução de vendas e receitas" /></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Nº de encomendas</h3><span class="muted xs">últimos {{ ordersBars().length }} períodos</span></div>
+    <div class="card-body"><app-column-chart [data]="ordersBars()" /></div>
+  </div>
+</div>
+
+<!-- Comercial -->
+<div class="sec-h"><h2>Indicadores comerciais</h2></div>
+<div class="kpis k5">
+  <app-kpi label="Total de encomendas" [value]="com().total" icon="package" />
+  <app-kpi label="Pendentes" [value]="com().pending" icon="clock" tone="warning" />
+  <app-kpi label="Em processamento" [value]="com().processing" icon="refresh" tone="info" />
+  <app-kpi label="Entregues" [value]="com().delivered" icon="check-circle" tone="success" />
+  <app-kpi label="Canceladas" [value]="com().cancelled" icon="x" tone="danger" />
+  <app-kpi label="Clientes" [value]="com().customers" [sub]="'+' + com().newCustomers + ' no período'" icon="users" />
+  <app-kpi label="Produtos activos" [value]="com().activeProducts" icon="tag" />
+  <app-kpi label="Sem stock" [value]="com().outOfStock" icon="alert" tone="danger" />
+  <app-kpi label="Stock reduzido" [value]="com().lowStock" icon="box" tone="warning" />
+</div>
+
+<div class="g3">
+  <div class="card">
+    <div class="card-head"><h3>Produtos mais vendidos</h3><a class="link xs" routerLink="/admin/relatorios" [queryParams]="{ tipo: 'top' }">Relatório</a></div>
+    <div class="card-body"><app-bar-list [data]="top()" /></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Vendas por categoria</h3></div>
+    <div class="card-body"><app-donut [data]="categories()" [money]="true" centerLabel="MT vendidos" [centerValue]="categoryTotal()" /></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Métodos de pagamento</h3></div>
+    <div class="card-body"><app-donut [data]="payMix()" centerLabel="encomendas" /></div>
+  </div>
+</div>
+
+<!-- Entregas -->
+<div class="sec-h"><h2>Indicadores de entregas</h2></div>
+<div class="kpis k6">
+  <app-kpi label="Pendentes" [value]="dlv().pending" icon="clock" tone="warning" />
+  <app-kpi label="Em andamento" [value]="dlv().inProgress" icon="truck" tone="brand" />
+  <app-kpi label="Concluídas" [value]="dlv().completed" [sub]="dlv().onTimeRate + '% dentro do prazo'" icon="check-circle" tone="success" />
+  <app-kpi label="Atrasadas" [value]="dlv().late" icon="alert" tone="danger" />
+  <app-kpi label="Valores cobrados" [value]="m(dlv().feesCharged)" icon="cash" />
+  <app-kpi label="Custos de entrega" [value]="m(dlv().operationalCost)" [sub]="'Margem ' + m(dlv().margin)" icon="wallet" [tone]="dlv().margin >= 0 ? 'neutral' : 'danger'" />
+</div>
+
+<div class="g3">
+  <div class="card">
+    <div class="card-head"><h3>Estado das encomendas</h3></div>
+    <div class="card-body"><app-bar-list [data]="statusDist()" /></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Desempenho das entregas</h3><span class="muted xs">média {{ dlv().averageDays.toString().replace('.', ',') }} dias</span></div>
+    <div class="card-body"><app-donut [data]="deliveryDonut()" centerLabel="dentro do prazo" [centerValue]="dlv().onTimeRate + '%'" /></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Últimas encomendas</h3><a class="link xs" routerLink="/admin/encomendas">Ver todas</a></div>
+    <div class="recent">
+      @for (o of recent(); track o.id) {
+        <a [routerLink]="['/admin/encomendas', o.id]">
+          <span class="grow"><b>{{ o.number }}</b><small>{{ o.customerName }} · {{ o.createdAt | date: 'dd/MM HH:mm' }}</small></span>
+          <span class="right"><b class="small">{{ o.total | mzn }}</b><br /><app-badge [label]="label[o.status]" [tone]="tone[o.status]" /></span>
+        </a>
+      }
+    </div>
+  </div>
+</div>

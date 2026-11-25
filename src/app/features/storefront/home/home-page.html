@@ -1,0 +1,167 @@
+<div class="container">
+  <!-- Banner principal -->
+  <section class="hero">
+    @let b = current();
+    <div class="hb main" [style.background]="b.color">
+      <svg class="pattern" viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <pattern id="cp-hero" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle cx="12" cy="12" r="7" fill="none" stroke="#fff" stroke-width="2" /><circle cx="12" cy="12" r="2" fill="#fff" />
+            <path d="M0 0l6 6M24 0l-6 6M0 24l6-6M24 24l-6-6" stroke="#fff" stroke-width="1.5" />
+          </pattern>
+        </defs>
+        <rect width="200" height="120" fill="url(#cp-hero)" />
+      </svg>
+      <span class="eyebrow">{{ b.endsAt ? 'Campanha a decorrer' : 'Xitolo' }}</span>
+      <h1 class="display">{{ b.title }}</h1>
+      <p>{{ b.text }}</p>
+      <a class="btn light lg cta" [routerLink]="b.link" [queryParams]="b.query">{{ b.cta }} <app-icon name="arrow-right" [size]="18" /></a>
+      <div class="dots">
+        @for (x of banners(); track x.id; let i = $index) {
+          <button type="button" [class.on]="x.id === b.id" (click)="go(i)" [attr.aria-label]="'Banner ' + (i + 1)"></button>
+        }
+      </div>
+    </div>
+    <div class="hero-side">
+      <a class="hb side capulana" routerLink="/produtos" [queryParams]="{ categoria: 'capulana' }">
+        <svg class="pattern" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs><pattern id="cp-side" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M10 0l10 10-10 10L0 10z" fill="none" stroke="#fff" stroke-width="1.6" /></pattern></defs>
+          <rect width="120" height="120" fill="url(#cp-side)" />
+        </svg>
+        <h2 class="display">Colecção Capulana 🇲🇿</h2>
+        <p>Peças feitas por costureiras locais.</p>
+        <span class="more">Ver colecção <app-icon name="arrow-right" [size]="16" /></span>
+      </a>
+      @if (coupons()[0]; as c) {
+        <button type="button" class="hb side coupon" (click)="copy(c.code)">
+          <span class="eyebrow dark">Cupão</span>
+          <h2 class="display">{{ c.description }}</h2>
+          <span class="code">{{ c.code }} <app-icon name="copy" [size]="16" /></span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <!-- Vantagens -->
+  <section class="perks">
+    <div class="perk"><span class="pi"><app-icon name="phone" /></span><div><b>Paga no telemóvel</b>M-Pesa · e-Mola</div></div>
+    <div class="perk"><span class="pi"><app-icon name="truck" /></span><div><b>Entrega nacional</b>Maputo em 24h</div></div>
+    <div class="perk"><span class="pi"><app-icon name="return" /></span><div><b>Troca em 7 dias</b>Tamanho errado? Trocamos</div></div>
+    <div class="perk"><span class="pi"><app-icon name="cash" /></span><div><b>Pagamento na entrega</b>Maputo Cidade e Província</div></div>
+  </section>
+
+  <!-- Categorias -->
+  <section class="block">
+    <div class="block-head"><h2 class="section-title">Categorias</h2><a class="link" routerLink="/produtos">Ver tudo</a></div>
+    <div class="cats">
+      @for (c of categoryCards(); track c.category.id) {
+        <a class="catc" routerLink="/produtos" [queryParams]="{ categoria: c.category.slug }">
+          <span class="ci">
+            @if (c.category.image) {
+              <img [src]="c.category.image" [alt]="c.category.name" />
+            } @else {
+              <app-product-image [type]="c.category.illustration.type" [color]="c.category.illustration.color" [pattern]="c.category.illustration.type === 'wrap'" />
+            }
+          </span>
+          <b>{{ c.category.name }}</b>
+          <small>{{ c.count }} peças</small>
+        </a>
+      }
+    </div>
+  </section>
+
+  <!-- Promoções -->
+  @if (onSale().length) {
+    <section class="block flash">
+      <div class="block-head">
+        <h2 class="section-title sale"><app-icon name="flash" [size]="22" [fill]="true" /> Em promoção</h2>
+        @if (countdown(); as t) {
+          <div class="timer">
+            Termina em
+            @if (t.d) { <span>{{ t.d }}d</span> }
+            <span>{{ t.h }}</span>:<span>{{ t.m }}</span>:<span>{{ t.s }}</span>
+          </div>
+        }
+        <a class="link" routerLink="/produtos" [queryParams]="{ promo: 1 }">Ver todas</a>
+      </div>
+      <div class="scroller">
+        @for (v of onSale(); track v.product.id) {
+          <app-product-card [view]="v" />
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Mais vendidos -->
+  <section class="block">
+    <div class="block-head"><h2 class="section-title">Mais vendidos</h2><a class="link" routerLink="/produtos" [queryParams]="{ ordem: 'vendidos' }">Ver todos</a></div>
+    <div class="scroller">
+      @for (v of bestSellers(); track v.product.id; let i = $index) {
+        <div class="ranked"><span class="rank">{{ i + 1 }}</span><app-product-card [view]="v" /></div>
+      }
+    </div>
+  </section>
+
+  <!-- Ofertas especiais -->
+  @if (coupons().length) {
+    <section class="block">
+      <div class="block-head"><h2 class="section-title">Ofertas especiais</h2></div>
+      <div class="offers">
+        @for (c of coupons(); track c.id) {
+          <div class="offer">
+            <div class="ov">{{ c.discountType === 'percent' ? c.value + '%' : money(c.value) }}<small>de desconto</small></div>
+            <div class="od">
+              <b>{{ c.name }}</b>
+              <span class="muted small">{{ c.description }}{{ c.minSubtotal ? ' · mínimo ' + money(c.minSubtotal) : '' }}</span>
+              <button type="button" class="code" (click)="copy(c.code)">{{ c.code }} <app-icon name="copy" [size]="14" /></button>
+            </div>
+          </div>
+        }
+        @if (madeInMz().length) {
+          <a class="offer mz" routerLink="/produtos" [queryParams]="{ mz: 1 }">
+            <div class="mzimgs">
+              @for (v of madeInMz(); track v.product.id) {
+                <span><app-product-image [type]="v.product.illustration.type" [pattern]="true" [color]="v.product.variants.colors[0]" [images]="v.product.images" /></span>
+              }
+            </div>
+            <div class="od"><b>Feito em Moçambique</b><span class="muted small">Apoia costureiras e marcas locais</span><span class="link small">Explorar →</span></div>
+          </a>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Novidades -->
+  @if (newArrivals().length) {
+    <section class="block">
+      <div class="block-head"><h2 class="section-title">Novidades</h2><a class="link" routerLink="/produtos" [queryParams]="{ ordem: 'recentes' }">Ver todas</a></div>
+      <div class="scroller">
+        @for (v of newArrivals(); track v.product.id) {
+          <app-product-card [view]="v" />
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Recomendados -->
+  <section class="block">
+    <div class="block-head">
+      <h2 class="section-title">{{ session.isLoggedIn() ? 'Recomendados para ti, ' + session.firstName() : 'Recomendados para ti' }}</h2>
+    </div>
+    <div class="grid">
+      @for (v of recommended(); track v.product.id) {
+        <app-product-card [view]="v" />
+      }
+    </div>
+  </section>
+
+  <!-- Recentemente adicionados -->
+  <section class="block">
+    <div class="block-head"><h2 class="section-title">Acabados de chegar ao catálogo</h2></div>
+    <div class="grid">
+      @for (v of recentlyAdded(); track v.product.id) {
+        <app-product-card [view]="v" />
+      }
+    </div>
+  </section>
+</div>

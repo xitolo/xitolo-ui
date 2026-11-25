@@ -1,0 +1,256 @@
+.pd {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 36px;
+  align-items: start;
+}
+.gal {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  position: sticky;
+  top: 130px;
+}
+.thumbs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+.tb {
+  width: 76px;
+  aspect-ratio: 3/4;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  &.on {
+    border-color: var(--ink);
+  }
+}
+.main-img {
+  aspect-ratio: 3/4;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  .tags {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    display: flex;
+    gap: 6px;
+  }
+}
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cat {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--brand);
+}
+h1 {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.price-box {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.save {
+  font-size: 13px;
+  color: var(--sale);
+  font-weight: 600;
+}
+.opt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.err {
+  color: var(--sale);
+  font-size: 12.5px;
+  min-height: 16px;
+}
+.stock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+  &.low {
+    color: var(--warning);
+  }
+  &.out {
+    color: var(--sale);
+  }
+}
+.buy {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  .grow {
+    flex: 1;
+  }
+  .fav {
+    border: 1.5px solid var(--line-2);
+    width: 50px;
+    height: 50px;
+    &.on {
+      color: var(--sale);
+    }
+  }
+}
+.perks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px;
+  li {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+}
+.desc {
+  h3 {
+    font-size: 15px;
+    margin: 10px 0 6px;
+  }
+  p {
+    color: var(--ink-2);
+  }
+}
+.feat {
+  padding-left: 18px;
+  color: var(--ink-2);
+  li {
+    margin: 3px 0;
+  }
+}
+.reviews,
+.related {
+  margin-top: 48px;
+  .section-title {
+    margin-bottom: 16px;
+  }
+}
+.rv-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.summary {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  .big {
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1;
+  }
+}
+.dist {
+  width: 100%;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dr {
+  display: grid;
+  grid-template-columns: 26px 1fr 26px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  .bar {
+    height: 7px;
+    border-radius: 9px;
+    background: var(--hover);
+    overflow: hidden;
+    i {
+      display: block;
+      height: 100%;
+      background: var(--gold);
+    }
+  }
+}
+.rv {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  p {
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .pd {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .gal {
+    position: static;
+    grid-template-columns: 1fr;
+  }
+  .thumbs {
+    flex-direction: row;
+    order: 2;
+    overflow-x: auto;
+  }
+  .tb {
+    width: 64px;
+    flex-shrink: 0;
+  }
+  .main-img {
+    max-height: 70vh;
+  }
+  .rv-grid {
+    grid-template-columns: 1fr;
+  }
+  h1 {
+    font-size: 24px;
+  }
+}
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+.pd > *,
+.gal > *,
+.rv-grid > * {
+  min-width: 0;
+}

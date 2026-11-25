@@ -1,0 +1,118 @@
+@if (isEdit() && !existing()) {
+  <app-empty icon="tag" title="Produto não encontrado"><a class="btn" routerLink="/admin/produtos">Voltar</a></app-empty>
+} @else {
+  <nav class="breadcrumb"><a routerLink="/admin/produtos">Produtos</a> / <span>{{ isEdit() ? existing()?.name : 'Novo produto' }}</span></nav>
+  <div class="page-head">
+    <div><h1>{{ isEdit() ? 'Editar produto' : 'Novo produto' }}</h1>
+      <p>{{ isEdit() ? 'As alterações ficam registadas no histórico do produto.' : 'O stock inicial é registado como entrada no inventário.' }}</p></div>
+    <div class="row">
+      <a class="btn ghost sm" [routerLink]="isEdit() ? ['/admin/produtos', id()] : ['/admin/produtos']">Cancelar</a>
+      <button type="button" class="btn sm" (click)="save()" [disabled]="busy()">{{ isEdit() ? 'Guardar alterações' : 'Criar produto' }}</button>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="save()" class="lay">
+    <div class="stack" style="--gap:14px">
+      <fieldset class="card pad">
+        <legend>Informação</legend>
+        <div class="form-grid">
+          <div class="field full"><label for="n">Nome</label><input id="n" class="input" formControlName="name" />
+            @if (form.controls.name.touched && form.controls.name.invalid) { <span class="error">Indique o nome (mín. 3 caracteres).</span> }</div>
+          <div class="field"><label for="s">SKU</label><input id="s" class="input mono" formControlName="sku" />
+            @if (form.controls.sku.touched && form.controls.sku.invalid) { <span class="error">3–20 letras, números ou hífen.</span> }</div>
+          <div class="field"><label for="c">Categoria</label>
+            <select id="c" class="select" formControlName="categoryId">
+              @for (c of catalog.categories(); track c.id) { <option [value]="c.id">{{ c.name }}{{ c.active ? '' : ' (inactiva)' }}</option> }
+            </select></div>
+          <div class="field full"><label for="d">Descrição</label><textarea id="d" class="textarea" formControlName="description"></textarea>
+            @if (form.controls.description.touched && form.controls.description.invalid) { <span class="error">Descrição demasiado curta.</span> }</div>
+          <div class="field full">
+            <label>Características</label>
+            <div class="stack" style="--gap:6px" formArrayName="features">
+              @for (f of features.controls; track $index; let i = $index) {
+                <div class="feat"><input class="input sm" [formControlName]="i" placeholder="Ex: 100% algodão" />
+                  <button type="button" class="icon-btn sm" (click)="features.removeAt(i)" title="Remover"><app-icon name="x" /></button></div>
+              }
+            </div>
+            <button type="button" class="link small" style="align-self:flex-start" (click)="addFeature()">+ Adicionar característica</button>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="card pad">
+        <legend>Imagens</legend>
+        <app-image-picker [(images)]="images" />
+        <p class="hint muted xs" style="margin-top:8px">Sem fotografias, a loja mostra uma ilustração da peça em cada cor.</p>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="field"><label for="t">Ilustração</label>
+            <select id="t" class="select" formControlName="type">@for (g of garments; track g[0]) { <option [value]="g[0]">{{ g[1] }}</option> }</select></div>
+          <label class="check" style="align-self:end"><input type="checkbox" formControlName="pattern" /> Padrão de capulana</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="card pad">
+        <legend>Preços</legend>
+        <div class="grid-3">
+          <div class="field"><label for="cp">Custo de aquisição (MT)</label><input id="cp" class="input" type="number" min="0" formControlName="costPrice" /></div>
+          <div class="field"><label for="pv">Preço de venda (MT)</label><input id="pv" class="input" type="number" min="1" formControlName="price" />
+            @if (form.controls.price.touched && form.controls.price.invalid) { <span class="error">Obrigatório.</span> }</div>
+          <div class="field"><label for="pp">Preço promocional (MT)</label><input id="pp" class="input" type="number" min="0" formControlName="promoPrice" placeholder="Opcional" />
+            <span class="hint">Deve ser inferior ao preço de venda.</span></div>
+        </div>
+        <p class="small" style="margin-top:10px">Margem bruta estimada: <b [class.danger-text]="margin() < 20" [class.ok]="margin() >= 20">{{ margin() }}%</b>
+          <span class="muted"> · campanhas activas podem baixar ainda mais o preço na loja</span></p>
+      </fieldset>
+
+      <fieldset class="card pad">
+        <legend>Variantes</legend>
+        <div class="field">
+          <label>Tamanhos</label>
+          <div class="chips">
+            @for (s of form.controls.sizes.value; track s) {
+              <button type="button" class="chip on" (click)="toggleIn('sizes', s)">{{ s }} ×</button>
+            }
+          </div>
+          <div class="row wrap" style="margin-top:6px">
+            <div class="sizes-add"><input class="input sm" placeholder="Novo tamanho" [value]="newSize()" (input)="newSize.set($any($event.target).value)" (keydown.enter)="$event.preventDefault(); addSize()" />
+              <button type="button" class="btn ghost sm" (click)="addSize()">Adicionar</button></div>
+            <span class="muted xs">Predefinições:</span>
+            @for (p of sizePresets; track p[0]) { <button type="button" class="link xs" (click)="applyPreset(p[1])">{{ p[0] }}</button> }
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Cores</label>
+          <div class="chips">
+            @for (sw of swatches; track sw[0]) {
+              <button type="button" class="chip" [class.on]="form.controls.colors.value.includes(sw[0])" (click)="toggleIn('colors', sw[0])">
+                <span style="width:12px;height:12px;border-radius:50%;border:1px solid #0002" [style.background]="sw[1]"></span>{{ sw[0] }}
+              </button>
+            }
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="card pad">
+        <legend>Stock e estado</legend>
+        <div class="grid-3">
+          <div class="field"><label for="is">{{ isEdit() ? 'Stock físico actual' : 'Stock inicial' }}</label>
+            <input id="is" class="input" type="number" min="0" formControlName="initialStock" />
+            @if (isEdit()) { <span class="hint">Altere no módulo <a class="link" routerLink="/admin/stock">Stock</a> para manter o histórico.</span> }</div>
+          <div class="field"><label for="ms">Stock mínimo</label><input id="ms" class="input" type="number" min="0" formControlName="minStock" />
+            <span class="hint">Abaixo disto o produto aparece como “stock reduzido”.</span></div>
+          <div class="field"><label for="st">Estado</label>
+            <select id="st" class="select" formControlName="status"><option value="activo">Activo (visível na loja)</option><option value="inactivo">Inactivo (oculto)</option></select></div>
+        </div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" formControlName="madeInMz" /> Feito em Moçambique</label>
+      </fieldset>
+    </div>
+
+    <aside class="side card pad stack">
+      <b>Pré-visualização</b>
+      <div class="prev"><app-product-image [images]="images()" [type]="value().type ?? 'tee'" [pattern]="!!value().pattern" [color]="(value().colors ?? [])[0] ?? 'Preto'" /></div>
+      <div><div class="small">{{ value().name || 'Nome do produto' }}</div>
+        <b>{{ (value().promoPrice || value().price || 0) | mzn }}</b>
+        @if (value().promoPrice) { <s class="muted small"> {{ value().price | mzn }}</s> }</div>
+      <button class="btn block" [disabled]="busy()">{{ isEdit() ? 'Guardar alterações' : 'Criar produto' }}</button>
+    </aside>
+  </form>
+}

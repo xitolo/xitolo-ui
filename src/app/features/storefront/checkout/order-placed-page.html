@@ -1,0 +1,77 @@
+<div class="container page">
+  @if (order(); as o) {
+    @let pay = payment()!;
+    @let m = method()!;
+    <div class="wrap">
+      @if (m.prefixes && pay.status === 'pendente') {
+        <!-- Simulação de pagamento por carteira móvel -->
+        <section class="card pad center stack sim">
+          <h1 class="display">Confirma no teu telemóvel</h1>
+          <p class="muted">Enviámos um pedido {{ m.label }} para <b>{{ pay.phone | phone }}</b></p>
+          <div class="phone">
+            <div class="op" [style.color]="m.color">{{ m.label }}</div>
+            <div class="ussd">Pagamento a XITOLO LDA<br />Valor: {{ pay.amount | mzn }}<br />Ref: {{ o.number }}<br /><br />Introduza o PIN para confirmar:<br />[ • • • • ]</div>
+          </div>
+          <div class="spinner" style="margin:4px auto"></div>
+          <p class="muted small">A aguardar confirmação… (simulação)</p>
+          <div class="row" style="justify-content:center">
+            <button type="button" class="btn ghost" (click)="respond(false)" [disabled]="busy()">Simular recusa</button>
+            <button type="button" class="btn accent" (click)="respond(true)" [disabled]="busy()">Simular PIN confirmado</button>
+          </div>
+        </section>
+      } @else if (m.prefixes && pay.status === 'rejeitado' && o.status === 'pendente') {
+        <section class="card pad center stack sim">
+          <div class="chk bad"><app-icon name="x" [size]="34" [stroke]="2.6" /></div>
+          <h1 class="display">Pagamento não concluído</h1>
+          <p class="muted">O pedido {{ m.label }} foi recusado ou expirou. A tua encomenda <b>{{ o.number }}</b> está reservada — tenta novamente.</p>
+          <div class="field" style="max-width:280px;margin:0 auto;text-align:left">
+            <label for="rp">Número {{ m.label }}</label>
+            <div class="input-prefix"><span>+258</span><input id="rp" class="input" inputmode="numeric" [value]="retryPhone() || pay.phone" (input)="retryPhone.set($any($event.target).value)" /></div>
+          </div>
+          <div><button type="button" class="btn brand" (click)="retry()" [disabled]="busy()">Tentar novamente</button></div>
+        </section>
+      } @else {
+        <section class="card pad center stack ok-box">
+          <div class="chk"><app-icon name="check" [size]="38" [stroke]="2.8" /></div>
+          <h1 class="display">Obrigado, {{ o.customerName.split(' ')[0] }}!</h1>
+          <p class="muted">
+            @switch (true) {
+              @case (o.status === 'cancelada') { Esta encomenda foi cancelada. }
+              @case (pay.status === 'confirmado') { A tua encomenda foi paga e confirmada. Vais receber um SMS quando sair para entrega. }
+              @case (pay.method === 'transferencia') { A encomenda está registada e fica confirmada assim que recebermos a transferência. }
+              @default { A tua encomenda está registada. Pagas no acto da entrega/levantamento. }
+            }
+          </p>
+
+          @if (pay.method === 'transferencia' && pay.status === 'pendente') {
+            <div class="bank">
+              <b>Dados para transferência</b>
+              <div class="kv"><span>Banco</span><span>Moza Banco</span></div>
+              <div class="kv"><span>Titular</span><span>Xitolo, Lda</span></div>
+              <div class="kv"><span>NIB</span><span class="mono">0034 0000 1234 5678 9012 3</span></div>
+              <div class="kv"><span>Referência</span><span class="mono strong">{{ o.number }}</span></div>
+              <div class="kv"><span>Valor</span><b>{{ pay.amount | mzn }}</b></div>
+              <button type="button" class="btn sm" (click)="transferSent()" [disabled]="busy()">Já fiz a transferência</button>
+            </div>
+          }
+
+          <div class="ordbox">
+            <div class="kv"><span>Nº da encomenda</span><b>{{ o.number }}</b></div>
+            <div class="kv"><span>Pagamento</span><span>{{ m.label }}</span></div>
+            <div class="kv"><span>{{ deliveryLabel[o.deliveryMethod] }}</span><span>{{ o.address ? o.address.city + ', ' + o.address.province : 'Loja Xitolo, Maputo' }}</span></div>
+            <div class="kv"><span>Total</span><b>{{ o.total | mzn }}</b></div>
+          </div>
+          <div style="max-width:420px;margin:0 auto;width:100%"><app-order-timeline [order]="o" [compact]="true" /></div>
+          <div class="row" style="justify-content:center">
+            <a class="btn ghost" [routerLink]="['/conta/encomendas', o.id]">Acompanhar encomenda</a>
+            <a class="btn" routerLink="/produtos">Continuar a comprar</a>
+          </div>
+        </section>
+      }
+    </div>
+  } @else {
+    <app-empty icon="package" title="Encomenda não encontrada" text="Verifica as tuas encomendas na área pessoal.">
+      <a class="btn" routerLink="/conta/encomendas">As minhas encomendas</a>
+    </app-empty>
+  }
+</div>

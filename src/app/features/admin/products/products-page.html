@@ -1,0 +1,69 @@
+<div class="page-head">
+  <div><h1>Produtos</h1><p>{{ catalog.products().length }} produtos no catálogo · alterações reflectem-se de imediato na loja.</p></div>
+  <div class="row">
+    <button type="button" class="btn ghost sm" (click)="export()"><app-icon name="download" [size]="16" /> Exportar CSV</button>
+    <a class="btn sm" routerLink="/admin/produtos/novo"><app-icon name="plus" [size]="16" /> Novo produto</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row wrap toolbar" style="padding:12px 14px;border-bottom:1px solid var(--line)">
+    <div class="search-box" style="height:36px;flex:1;min-width:200px">
+      <app-icon name="search" />
+      <input placeholder="Nome ou SKU…" [value]="q()" (input)="q.set($any($event.target).value); reset()" aria-label="Procurar produto" />
+    </div>
+    <select class="select sm" style="width:auto" [value]="cat()" (change)="cat.set($any($event.target).value); reset()" aria-label="Categoria">
+      <option value="">Todas as categorias</option>
+      @for (c of catalog.categories(); track c.id) { <option [value]="c.id" [selected]="c.id === cat()">{{ c.name }}</option> }
+    </select>
+    <select class="select sm" style="width:auto" [value]="status()" (change)="status.set($any($event.target).value); reset()" aria-label="Estado">
+      <option value="">Todos os estados</option><option value="activo">Activos</option><option value="inactivo">Inactivos</option>
+    </select>
+    <select class="select sm" style="width:auto" [value]="level()" (change)="level.set($any($event.target).value); reset()" aria-label="Stock">
+      <option value="">Todo o stock</option><option value="ok">Stock normal</option><option value="baixo">Stock reduzido</option><option value="esgotado">Sem stock</option>
+    </select>
+  </div>
+
+  @if (filtered().length) {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Produto</th><th>Categoria</th><th class="num">Custo</th><th class="num">Preço</th><th class="num">Margem</th><th class="num">Stock</th><th class="num">Vendidos</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (v of rows(); track v.product.id) {
+            <tr class="clickable" (click)="open(v)">
+              <td>
+                <div class="row" style="--gap:10px">
+                  <span class="thumb"><app-product-image [images]="v.product.images" [type]="v.product.illustration.type" [pattern]="v.product.illustration.pattern" [color]="v.product.variants.colors[0]" /></span>
+                  <div><b>{{ v.product.name }}</b><div class="muted xs mono">{{ v.product.sku }}</div></div>
+                </div>
+              </td>
+              <td>{{ v.category?.name ?? '—' }}@if (v.category && !v.category.active) { <span class="muted xs"> (inactiva)</span> }</td>
+              <td class="num">{{ v.product.costPrice | mzn }}</td>
+              <td class="num">
+                <b>{{ v.quote.price | mzn }}</b>
+                @if (v.quote.price < v.product.price) { <div class="muted xs"><s>{{ v.product.price | mzn }}</s> −{{ v.quote.discountPercent }}%</div> }
+              </td>
+              <td class="num" [class.danger-text]="margin(v) < 20">{{ margin(v) }}%</td>
+              <td class="num">
+                <app-badge [label]="v.available + ' disp.'" [tone]="v.level === 'ok' ? 'success' : v.level === 'baixo' ? 'warning' : 'danger'" />
+                <div class="muted xs">{{ v.product.stock }} fís. · {{ v.product.reserved }} res.</div>
+              </td>
+              <td class="num">{{ v.sold }}</td>
+              <td><app-badge [label]="v.product.status === 'activo' ? 'Activo' : 'Inactivo'" [tone]="v.product.status === 'activo' ? 'success' : 'neutral'" /></td>
+              <td class="nowrap" (click)="$event.stopPropagation()">
+                <a class="icon-btn sm" [routerLink]="['/admin/produtos', v.product.id, 'editar']" title="Editar"><app-icon name="edit" /></a>
+                <button type="button" class="icon-btn sm" (click)="toggle(v)" [title]="v.product.status === 'activo' ? 'Desactivar' : 'Activar'"><app-icon [name]="v.product.status === 'activo' ? 'eye' : 'refresh'" /></button>
+                <button type="button" class="icon-btn sm" (click)="remove(v)" title="Remover"><app-icon name="trash" /></button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-pagination [total]="filtered().length" [(page)]="page" [(size)]="size" />
+  } @else {
+    <app-empty icon="tag" title="Nenhum produto encontrado" text="Ajuste os filtros ou crie um novo produto." />
+  }
+</div>

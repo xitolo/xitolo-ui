@@ -1,0 +1,107 @@
+@if (order(); as o) {
+  @let pay = payment();
+  @let dlv = delivery();
+  <nav class="breadcrumb"><a routerLink="/admin/encomendas">Encomendas</a> / <span>{{ o.number }}</span></nav>
+  <div class="page-head">
+    <div><h1 class="mono">{{ o.number }}</h1><p>{{ o.createdAt | date: "dd/MM/yyyy 'às' HH:mm" }} · {{ methodLabel[o.deliveryMethod] }} · stock {{ o.stockState }}</p></div>
+    <app-badge [label]="label[o.status]" [tone]="tone[o.status]" />
+  </div>
+
+  @if (next().length || canCancel()) {
+    <div class="actbar">
+      <b class="small">Actualizar estado:</b>
+      @for (s of next(); track s; let first = $first) {
+        <button type="button" class="btn sm" [class.ghost]="!first" (click)="advance(s)" [disabled]="busy() || !!blocked()">{{ first ? '→ ' : '' }}{{ label[s] }}</button>
+      }
+      <span class="spacer"></span>
+      @if (canCancel()) { <button type="button" class="btn danger sm" (click)="cancel()" [disabled]="busy()">Cancelar encomenda</button> }
+      @if (blocked()) { <div class="alert warning small" style="width:100%"><app-icon name="info" [size]="16" /> {{ blocked() }}</div> }
+    </div>
+  }
+
+  <div class="g">
+    <div class="stack" style="--gap:14px">
+      <div class="card">
+        <div class="card-head"><h3>Artigos ({{ o.items.length }})</h3><span class="muted xs">preços registados no momento da compra</span></div>
+        @for (i of o.items; track $index) {
+          <div class="it">
+            <span class="im"><app-product-image [images]="i.image ? [i.image] : []" [type]="i.illustration.type" [pattern]="i.illustration.pattern" [color]="i.color" /></span>
+            <div style="flex:1"><a class="strong small" [routerLink]="['/admin/produtos', i.productId]">{{ i.name }}</a>
+              <div class="muted xs">{{ i.sku }} · {{ i.color }} · {{ i.size }} · custo {{ i.unitCost | mzn }}</div></div>
+            <div class="right small">{{ i.qty }} × {{ i.unitPrice | mzn }}@if (i.listPrice > i.unitPrice) { <div class="muted xs"><s>{{ i.listPrice | mzn }}</s></div> }</div>
+            <b class="small" style="min-width:80px;text-align:right">{{ i.unitPrice * i.qty | mzn }}</b>
+          </div>
+        }
+        <div class="card-body">
+          <div class="kv"><span>Subtotal</span><span>{{ o.subtotal | mzn }}</span></div>
+          @if (o.discount) { <div class="kv"><span>Cupão {{ o.couponCode }}</span><span>−{{ o.discount | mzn }}</span></div> }
+          <div class="kv"><span>Taxa de entrega</span><span>{{ o.shippingFee | mzn }}</span></div>
+          <div class="kv total"><span>Total</span><span>{{ o.total | mzn }}</span></div>
+          <div class="kv small"><span>Custo dos produtos</span><span>{{ cost() | mzn }}</span></div>
+          <div class="kv small"><span>Margem bruta (produtos)</span><span>{{ o.subtotal - o.discount - cost() | mzn }}</span></div>
+        </div>
+      </div>
+
+      <div class="card"><div class="card-head"><h3>Linha temporal</h3></div><div class="card-body"><app-order-timeline [order]="o" /></div></div>
+
+      <div class="card">
+        <div class="card-head"><h3>Histórico de alterações</h3></div>
+        <ul class="hist">
+          @for (h of history(); track $index) {
+            <li><span class="muted xs">{{ h.at | date: 'dd/MM/yy HH:mm' }}<br />{{ h.by }}</span><span>{{ h.message }}</span></li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="stack" style="--gap:14px">
+      <div class="card pad">
+        <div class="row between"><h3>Cliente</h3><a class="link xs" [routerLink]="['/admin/clientes', o.customerId]">Ver ficha</a></div>
+        <p class="small" style="margin-top:6px"><b>{{ o.customerName }}</b><br />{{ o.customerEmail }}<br />{{ o.customerPhone | phone }}</p>
+      </div>
+
+      @if (pay) {
+        <div class="card pad">
+          <div class="row between"><h3>Pagamento</h3><app-badge [label]="payLabel[pay.status]" [tone]="payTone[pay.status]" /></div>
+          <div class="kv small"><span>Método</span><span>{{ payInfo[pay.method].label }}</span></div>
+          <div class="kv small"><span>Valor</span><b>{{ pay.amount | mzn }}</b></div>
+          @if (pay.phone) { <div class="kv small"><span>Número</span><span>{{ pay.phone | phone }}</span></div> }
+          <div class="kv small"><span>Referência</span><span class="mono">{{ pay.reference }}</span></div>
+          @if (pay.fee) { <div class="kv small"><span>Comissão estimada</span><span>{{ pay.fee | mzn }}</span></div> }
+          @if (pay.confirmedAt) { <div class="kv small"><span>Confirmado</span><span>{{ pay.confirmedAt | date: 'dd/MM/yyyy HH:mm' }}</span></div> }
+          <div style="margin-top:8px"><app-payment-actions [payment]="pay" /></div>
+          <details style="margin-top:8px"><summary class="link xs">Histórico do pagamento</summary>
+            @for (h of pay.history; track $index) { <div class="xs muted" style="padding:3px 0">{{ h.at | date: 'dd/MM HH:mm' }} · {{ h.message }}</div> }
+          </details>
+        </div>
+      }
+
+      <div class="card pad">
+        <div class="row between"><h3>Entrega</h3>
+          @if (dlv) { <app-badge [label]="late() && dlv.status !== 'concluida' ? 'Atrasada' : dLabel[dlv.status]" [tone]="late() && dlv.status !== 'concluida' ? 'danger' : dTone[dlv.status]" /> }</div>
+        @if (o.address; as a) {
+          <p class="small" style="margin:6px 0">{{ a.recipient }} · {{ a.phone | phone }}<br />{{ fmt(a) }}@if (a.reference) { <br /><span class="muted">Ref.: {{ a.reference }}</span> }</p>
+        } @else {
+          <p class="small" style="margin:6px 0">Levantamento na loja (Av. 24 de Julho, Maputo)</p>
+        }
+        @if (dlv) {
+          <div class="kv small"><span>Responsável</span><span>{{ dlv.courier }}</span></div>
+          <div class="kv small"><span>Cobrado / custo</span><span>{{ dlv.fee | mzn }} / {{ dlv.cost | mzn }}</span></div>
+          <div class="kv small"><span>Prazo</span><span [class.danger-text]="late()">{{ dlv.expectedBy | date: 'dd/MM/yyyy' }}</span></div>
+          @if (dlv.dispatchedAt) { <div class="kv small"><span>Saída</span><span>{{ dlv.dispatchedAt | date: 'dd/MM HH:mm' }}</span></div> }
+          @if (dlv.completedAt) { <div class="kv small"><span>Conclusão</span><span>{{ dlv.completedAt | date: 'dd/MM HH:mm' }}</span></div> }
+          @if (dlv.status === 'pendente' || dlv.status === 'em_curso') { <button type="button" class="btn ghost sm" style="margin-top:8px" (click)="deliveryOpen.set(true)">Editar entrega</button> }
+        } @else if (o.deliveryMethod !== 'levantamento' && o.status !== 'cancelada' && o.status !== 'pendente') {
+          <div class="alert warning small"><app-icon name="truck" [size]="16" /> Ainda sem entrega registada.</div>
+          <button type="button" class="btn sm" style="margin-top:8px" (click)="deliveryOpen.set(true)">Registar entrega</button>
+        } @else if (o.deliveryMethod !== 'levantamento' && o.status === 'pendente') {
+          <p class="muted xs">A entrega pode ser registada depois de a encomenda ser confirmada.</p>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (deliveryOpen()) { <app-delivery-dialog [order]="o" [delivery]="dlv" (closed)="deliveryOpen.set(false)" /> }
+} @else {
+  <app-empty icon="package" title="Encomenda não encontrada"><a class="btn" routerLink="/admin/encomendas">Voltar</a></app-empty>
+}

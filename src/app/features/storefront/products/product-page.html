@@ -1,0 +1,161 @@
+<div class="container page">
+  @if (view(); as v) {
+    @let p = v.product;
+    <nav class="breadcrumb">
+      <a routerLink="/">Início</a> /
+      <a routerLink="/produtos" [queryParams]="{ categoria: v.category?.slug }">{{ v.category?.name }}</a> /
+      <span>{{ p.name }}</span>
+    </nav>
+
+    <div class="pd">
+      <!-- Galeria -->
+      <div class="gal">
+        <div class="thumbs">
+          @for (g of gallery(); track $index) {
+            <button type="button" class="tb" [class.on]="(active() ?? gallery()[0]) === g || (active()?.kind === 'ill' && g.kind === 'ill' && active()?.color === g.color)" (click)="active.set(g); g.kind === 'ill' && color.set(g.color)">
+              <app-product-image [images]="p.images" [index]="g.index" [type]="p.illustration.type" [pattern]="p.illustration.pattern" [color]="g.color" />
+            </button>
+          }
+        </div>
+        <div class="main-img">
+          @let a = active() ?? gallery()[0];
+          <app-product-image [images]="p.images" [index]="a.kind === 'photo' ? a.index : 999" [type]="p.illustration.type" [pattern]="p.illustration.pattern" [color]="a.kind === 'ill' ? a.color : color()" [alt]="p.name" style="--ill:62%" />
+          <span class="tags">
+            @if (v.quote.discountPercent > 0) { <span class="tag">−{{ v.quote.discountPercent }}%</span> }
+            @if (v.isNew) { <span class="tag new">Novo</span> }
+            @if (p.madeInMz) { <span class="tag local">Feito em MZ</span> }
+          </span>
+        </div>
+      </div>
+
+      <!-- Informação -->
+      <div class="info">
+        <a class="cat" routerLink="/produtos" [queryParams]="{ categoria: v.category?.slug }">{{ v.category?.name }}</a>
+        <h1>{{ p.name }}</h1>
+        <div class="row wrap small muted">
+          <app-stars [value]="v.rating" [count]="v.reviewCount" />
+          <span>· {{ v.sold }} vendidos</span>
+          <span>· SKU {{ p.sku }}</span>
+        </div>
+
+        <div class="price-box">
+          <app-price [price]="v.quote.price" [was]="v.quote.listPrice" [showOff]="true" style="--price-size:28px" />
+          @if (v.quote.discountPercent > 0) {
+            <span class="save">Poupas {{ v.quote.listPrice - v.quote.price | mzn }}
+              @if (v.quote.campaign) { · {{ v.quote.campaign.name }} }
+            </span>
+          }
+        </div>
+
+        <div class="opt">
+          <span class="label">Cor: <span class="muted">{{ color() }}</span></span>
+          <div class="chips">
+            @for (c of p.variants.colors; track c) {
+              <button type="button" class="swatch" [class.on]="c === color()" [style.background]="swatch(c)" [title]="c" [attr.aria-label]="c" (click)="pickColor(c)"></button>
+            }
+          </div>
+        </div>
+
+        <div class="opt">
+          <div class="row between">
+            <span class="label">Tamanho: <span class="muted">{{ size() ?? 'escolhe um' }}</span></span>
+            <a class="link xs" routerLink="/ajuda" fragment="tamanhos">Guia de tamanhos</a>
+          </div>
+          <div class="chips">
+            @for (s of p.variants.sizes; track s) {
+              <button type="button" class="chip square" [class.on]="s === size()" (click)="size.set(s); error.set('')" [disabled]="v.available <= 0">{{ s }}</button>
+            }
+          </div>
+          <span class="err">{{ error() }}</span>
+        </div>
+
+        <div class="stock" [class.low]="v.level === 'baixo'" [class.out]="v.level === 'esgotado'">
+          @switch (v.level) {
+            @case ('esgotado') { <app-icon name="alert" [size]="16" /> Esgotado — volta em breve }
+            @case ('baixo') { <app-icon name="clock" [size]="16" /> Só restam {{ v.available }} unidades }
+            @default { <app-icon name="check-circle" [size]="16" /> Em stock · {{ v.available }} disponíveis }
+          }
+        </div>
+
+        <div class="buy">
+          <app-qty [(value)]="qty" [max]="maxQty()" />
+          <button type="button" class="btn brand lg grow" (click)="add(false)" [disabled]="v.available <= 0">Adicionar ao carrinho</button>
+          <button type="button" class="icon-btn fav" [class.on]="favorites.has(p.id)" (click)="toggleFav()" [attr.aria-label]="'Favorito'">
+            <app-icon name="heart" [fill]="favorites.has(p.id)" />
+          </button>
+        </div>
+        <button type="button" class="btn lg block" (click)="add(true)" [disabled]="v.available <= 0">Comprar agora</button>
+
+        <ul class="perks">
+          <li><app-icon name="truck" [size]="18" /> Maputo: amanhã · Outras províncias: 2 a 8 dias · grátis acima de {{ freeFrom | mzn }}</li>
+          <li><app-icon name="return" [size]="18" /> Troca grátis de tamanho em 7 dias</li>
+          <li><app-icon name="phone" [size]="18" /> M-Pesa, e-Mola, transferência ou pagamento na entrega</li>
+        </ul>
+
+        <div class="desc">
+          <h3>Descrição</h3>
+          <p>{{ p.description }}</p>
+          @if (p.features.length) {
+            <h3>Características</h3>
+            <ul class="feat">
+              @for (f of p.features; track f) { <li>{{ f }}</li> }
+            </ul>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Avaliações -->
+    <section class="reviews" id="avaliacoes">
+      <h2 class="section-title">Avaliações dos clientes</h2>
+      <div class="rv-grid">
+        <div class="summary card pad">
+          <div class="big">{{ v.rating ? v.rating.toFixed(1).replace('.', ',') : '—' }}</div>
+          <app-stars [value]="v.rating" [size]="18" />
+          <div class="muted small">{{ v.reviewCount }} avaliações</div>
+          <div class="dist">
+            @for (d of distribution(); track d.s) {
+              <div class="dr"><span>{{ d.s }}★</span><span class="bar"><i [style.width.%]="d.pct"></i></span><span>{{ d.n }}</span></div>
+            }
+          </div>
+        </div>
+        <div class="stack">
+          @if (canReview()) {
+            <form class="card pad stack" (submit)="$event.preventDefault(); submitReview()">
+              <b>Já recebeste esta peça — conta-nos o que achaste</b>
+              <app-stars [(value)]="newRating" [editable]="true" [size]="24" />
+              <textarea class="textarea" placeholder="Qualidade, tamanho, entrega…" [value]="newComment()" (input)="newComment.set($any($event.target).value)" maxlength="400"></textarea>
+              <div class="row end"><button class="btn" [disabled]="sending()">Publicar avaliação</button></div>
+            </form>
+          }
+          @for (r of reviews(); track r.id) {
+            <article class="rv">
+              <div class="row between">
+                <b>{{ r.customerName.split(' ')[0] }} {{ r.customerName.split(' ').slice(-1)[0][0] }}.</b>
+                <span class="muted xs">{{ r.createdAt | date: 'dd/MM/yyyy' }}</span>
+              </div>
+              <app-stars [value]="r.rating" />
+              @if (r.comment) { <p>{{ r.comment }}</p> }
+              <span class="xs ok">✓ Compra verificada</span>
+            </article>
+          } @empty {
+            <app-empty icon="star" title="Ainda sem avaliações" text="Só clientes que receberam este produto podem avaliá-lo." />
+          }
+        </div>
+      </div>
+    </section>
+
+    @if (related().length) {
+      <section class="related">
+        <h2 class="section-title">Também vais gostar</h2>
+        <div class="grid">
+          @for (r of related(); track r.product.id) { <app-product-card [view]="r" /> }
+        </div>
+      </section>
+    }
+  } @else {
+    <app-empty icon="search" title="Produto não encontrado" text="Este produto não existe ou já não está disponível na loja.">
+      <a class="btn" routerLink="/produtos">Ver catálogo</a>
+    </app-empty>
+  }
+</div>

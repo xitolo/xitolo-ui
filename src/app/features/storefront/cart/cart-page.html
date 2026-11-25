@@ -1,0 +1,96 @@
+<div class="container page">
+  <div class="page-head"><div><h1>Carrinho</h1><p>{{ cart.count() }} artigo(s)</p></div></div>
+
+  @if (p().lines.length) {
+    <div class="layout">
+      <section class="stack">
+        @if (p().errors.length) {
+          <div class="alert warning">
+            <app-icon name="alert" [size]="18" />
+            <div>Alguns artigos precisam de atenção antes de finalizar a compra.
+              <button type="button" class="link" (click)="removeInvalid()">Remover indisponíveis</button>
+            </div>
+          </div>
+        }
+        <div class="card">
+          @for (l of p().lines; track $index; let i = $index) {
+            <div class="ln" [class.bad]="l.error">
+              <a class="im" [routerLink]="['/produto', l.line.productId]">
+                @if (l.product; as pr) {
+                  <app-product-image [images]="pr.images" [type]="pr.illustration.type" [pattern]="pr.illustration.pattern" [color]="l.line.color" />
+                }
+              </a>
+              <div class="inf">
+                <a class="nm" [routerLink]="['/produto', l.line.productId]">{{ l.product?.name ?? 'Produto removido' }}</a>
+                <span class="muted small">{{ l.line.color }} · Tamanho {{ l.line.size }}</span>
+                @if (l.quote; as q) {
+                  <span class="small">{{ q.price | mzn }} / un.
+                    @if (q.discountPercent) { <s class="muted">{{ q.listPrice | mzn }}</s> }
+                  </span>
+                }
+                @if (l.error) { <span class="err"><app-icon name="alert" [size]="14" /> {{ l.error }}</span> }
+                <div class="acts">
+                  <app-qty class="sm" [value]="l.line.qty" [max]="maxFor(i)" (changed)="cart.setQty(i, $event)" />
+                  <button type="button" class="link small muted-link" (click)="cart.remove(i)"><app-icon name="trash" [size]="14" /> Remover</button>
+                </div>
+              </div>
+              <b class="lt">{{ l.lineTotal | mzn }}</b>
+            </div>
+          }
+        </div>
+        <a routerLink="/produtos" class="link small"><app-icon name="arrow-left" [size]="14" /> Continuar a comprar</a>
+      </section>
+
+      <aside class="card pad summary">
+        <h3>Resumo</h3>
+        <div class="ship">
+          @if (remaining() > 0) {
+            Faltam <b>{{ remaining() | mzn }}</b> para envio grátis
+          } @else {
+            🎉 Tens <b class="ok">envio grátis</b> na entrega ao domicílio!
+          }
+          <div class="progress"><i [style.width.%]="progress()"></i></div>
+        </div>
+
+        <div class="kv"><span>Subtotal ({{ p().units }})</span><span>{{ p().subtotal | mzn }}</span></div>
+        @if (p().savings) { <div class="kv"><span>Poupança em promoções</span><span class="ok">−{{ p().savings | mzn }}</span></div> }
+
+        <div class="field est">
+          <label for="prov">Estimativa de entrega para</label>
+          <select id="prov" class="select sm" [value]="cart.province()" (change)="cart.province.set($any($event.target).value)">
+            @for (pv of provinces; track pv.name) { <option [value]="pv.name" [selected]="pv.name === cart.province()">{{ pv.name }} · {{ pv.etaLabel }}</option> }
+          </select>
+        </div>
+        <div class="kv"><span>Entrega ({{ p().option.label.toLowerCase() }})</span><span>@if (p().shippingFee) { {{ p().shippingFee | mzn }} } @else { <b class="ok">Grátis</b> }</span></div>
+
+        @if (cart.couponCode(); as c) {
+          <div class="kv"><span>Cupão <b class="mono">{{ c }}</b> <button type="button" class="link xs" (click)="cart.removeCoupon()">remover</button></span><span class="ok">−{{ p().discount | mzn }}</span></div>
+          @if (p().coupon && !p().coupon!.ok) { <div class="err small">{{ p().coupon!.message }}</div> }
+        } @else {
+          <form class="coupon" (submit)="$event.preventDefault(); applyCoupon()">
+            <input class="input sm" placeholder="Código de cupão" [value]="code()" (input)="code.set($any($event.target).value)" aria-label="Código de cupão" />
+            <button class="btn sm square" [disabled]="!code().trim()">Aplicar</button>
+          </form>
+          @if (couponError()) { <div class="err small">{{ couponError() }}</div> }
+        }
+
+        <div class="kv total"><span>Total</span><span>{{ p().total | mzn }}</span></div>
+        <a class="btn brand lg block" routerLink="/checkout" [class.disabled]="p().errors.length || !p().items.length" [attr.aria-disabled]="!!p().errors.length">Finalizar compra</a>
+        <p class="muted xs center">Pagamento seguro com M-Pesa, e-Mola, transferência ou na entrega.</p>
+      </aside>
+    </div>
+
+    @if (suggestions().length) {
+      <section style="margin-top:36px">
+        <h2 class="section-title" style="margin-bottom:14px">Junta ao teu carrinho</h2>
+        <div class="sugg">
+          @for (v of suggestions(); track v.product.id) { <app-product-card [view]="v" /> }
+        </div>
+      </section>
+    }
+  } @else {
+    <app-empty icon="bag" title="O teu carrinho está vazio" text="Descobre as novidades e promoções da semana.">
+      <a class="btn" routerLink="/produtos">Começar a comprar</a>
+    </app-empty>
+  }
+</div>

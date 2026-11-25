@@ -1,0 +1,153 @@
+<div class="strip">
+  <span>🚚 Entregamos nas <b>11 províncias</b></span>
+  <span class="hide-sm">· Envio grátis acima de <b>{{ freeFrom | mzn }}</b></span>
+  <span class="hide-sm">· Paga com <b>M-Pesa, e-Mola, transferência ou na entrega</b></span>
+</div>
+
+<header class="hd">
+  <div class="container">
+    <div class="bar">
+      <button type="button" class="icon-btn menu-btn" (click)="menuOpen.set(true)" aria-label="Abrir menu"><app-icon name="menu" /></button>
+      <a routerLink="/" class="brand" aria-label="Xitolo — início"><app-logo [size]="28" /></a>
+
+      <div class="search-wrap">
+        <form class="search-box" (submit)="$event.preventDefault(); submitSearch()" role="search">
+          <app-icon name="search" />
+          <input
+            type="search"
+            placeholder="Procurar vestidos, capulanas, ténis…"
+            [value]="q()"
+            (input)="q.set($any($event.target).value); searchOpen.set(true)"
+            (focus)="searchOpen.set(true)"
+            (blur)="closeSearchSoon()"
+            aria-label="Procurar produtos"
+            autocomplete="off"
+          />
+        </form>
+        @if (searchOpen() && suggestions().length) {
+          <div class="suggest">
+            @for (s of suggestions(); track s.product.id) {
+              <button type="button" (mousedown)="pick(s.product.id)">
+                <span class="thumb"><app-product-image [images]="s.product.images" [type]="s.product.illustration.type" [pattern]="s.product.illustration.pattern" [color]="s.product.variants.colors[0]" /></span>
+                <span class="sn">{{ s.product.name }}<small>{{ s.category?.name }}</small></span>
+                <b>{{ s.quote.price | mzn }}</b>
+              </button>
+            }
+            <button type="button" class="all" (mousedown)="submitSearch()">Ver todos os resultados para “{{ q() }}”</button>
+          </div>
+        }
+      </div>
+
+      <nav class="icons">
+        <a class="icon-btn hide-sm" routerLink="/seguir" title="Seguir encomenda"><app-icon name="truck" /></a>
+        <a class="icon-btn" [routerLink]="session.isLoggedIn() ? '/conta' : '/entrar'" [title]="session.isLoggedIn() ? 'A minha conta' : 'Entrar'">
+          <app-icon name="user" />
+        </a>
+        <a class="icon-btn hide-sm" routerLink="/favoritos" title="Favoritos">
+          <app-icon name="heart" />
+          @if (favorites.count()) { <span class="count-badge">{{ favorites.count() }}</span> }
+        </a>
+        <a class="icon-btn" routerLink="/carrinho" title="Carrinho">
+          <app-icon name="bag" />
+          @if (cart.count()) { <span class="count-badge">{{ cart.count() }}</span> }
+        </a>
+        @if (session.isLoggedIn()) {
+          <span class="hello hide-md">Olá, <b>{{ session.firstName() }}</b></span>
+        }
+      </nav>
+    </div>
+
+    <nav class="cats" aria-label="Categorias">
+      <a routerLink="/produtos" [class.on]="isCatalog() && !activeCategory()" [queryParams]="{}">Tudo</a>
+      <a routerLink="/produtos" [queryParams]="{ promo: 1 }" class="sale">Promoções</a>
+      @for (c of catalog.activeCategories(); track c.id) {
+        <a routerLink="/produtos" [queryParams]="{ categoria: c.slug }" [class.on]="activeCategory() === c.slug">{{ c.name }}</a>
+      }
+      <a routerLink="/produtos" [queryParams]="{ ordem: 'recentes' }">Novidades</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <router-outlet />
+</main>
+
+<footer class="ft">
+  <div class="container">
+    <div class="fgrid">
+      <div>
+        <app-logo [size]="26" [light]="true" />
+        <p class="fp">Moda acessível, entregue em todo Moçambique. Av. 24 de Julho, 1520, Maputo.</p>
+        <div class="pays">
+          <span style="background:#e60000">M-Pesa</span><span style="background:#f28c00">e-Mola</span><span style="background:#0b5fa5">Transferência</span><span style="background:#3a3330">Na entrega</span>
+        </div>
+      </div>
+      <div>
+        <h5>Ajuda</h5>
+        <ul>
+          <li><a routerLink="/seguir">Seguir encomenda</a></li>
+          <li><a routerLink="/ajuda" fragment="trocas">Trocas e devoluções</a></li>
+          <li><a routerLink="/ajuda" fragment="tamanhos">Guia de tamanhos</a></li>
+          <li><a href="https://wa.me/258840000000" target="_blank" rel="noopener">WhatsApp: +258 84 000 0000</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Entregas</h5>
+        <ul>
+          <li><a routerLink="/ajuda" fragment="entregas">Maputo — 24h</a></li>
+          <li><a routerLink="/ajuda" fragment="entregas">Sul — 2 a 4 dias</a></li>
+          <li><a routerLink="/ajuda" fragment="entregas">Centro — 3 a 6 dias</a></li>
+          <li><a routerLink="/ajuda" fragment="entregas">Norte — 4 a 8 dias</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Xitolo</h5>
+        <ul>
+          <li><a routerLink="/ajuda" fragment="sobre">Sobre nós</a></li>
+          <li><a routerLink="/ajuda" fragment="pagamentos">Formas de pagamento</a></li>
+          <li><a routerLink="/produtos" [queryParams]="{ mz: 1 }">Feito em Moçambique</a></li>
+          <li><a routerLink="/admin">Painel administrativo</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="copy">© 2026 Xitolo · Versão de demonstração — dados simulados, nenhum pagamento real é processado.</div>
+  </div>
+</footer>
+
+<nav class="tabbar" aria-label="Navegação principal">
+  <a routerLink="/" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" /><span>Início</span></a>
+  <a routerLink="/produtos" routerLinkActive="on"><app-icon name="grid" /><span>Catálogo</span></a>
+  <a routerLink="/favoritos" routerLinkActive="on"><app-icon name="heart" /><span>Favoritos</span>
+    @if (favorites.count()) { <i>{{ favorites.count() }}</i> }
+  </a>
+  <a routerLink="/carrinho" routerLinkActive="on"><app-icon name="bag" /><span>Carrinho</span>
+    @if (cart.count()) { <i>{{ cart.count() }}</i> }
+  </a>
+  <a [routerLink]="session.isLoggedIn() ? '/conta' : '/entrar'" routerLinkActive="on"><app-icon name="user" /><span>Conta</span></a>
+</nav>
+
+@if (menuOpen()) {
+  <div class="overlay" (click)="menuOpen.set(false)"></div>
+  <aside class="drawer left side-menu">
+    <div class="row between" style="padding:16px 18px;border-bottom:1px solid var(--line)">
+      <app-logo [size]="24" />
+      <button type="button" class="icon-btn" (click)="menuOpen.set(false)" aria-label="Fechar"><app-icon name="x" /></button>
+    </div>
+    <nav (click)="menuOpen.set(false)">
+      <a routerLink="/produtos">Todos os produtos <app-icon name="chevron-right" [size]="16" /></a>
+      <a routerLink="/produtos" [queryParams]="{ promo: 1 }" class="sale">Promoções <app-icon name="chevron-right" [size]="16" /></a>
+      @for (c of catalog.activeCategories(); track c.id) {
+        <a routerLink="/produtos" [queryParams]="{ categoria: c.slug }">{{ c.name }} <app-icon name="chevron-right" [size]="16" /></a>
+      }
+      <hr />
+      <a routerLink="/seguir">Seguir encomenda</a>
+      <a routerLink="/favoritos">Favoritos</a>
+      <a routerLink="/ajuda">Ajuda</a>
+      @if (session.isLoggedIn()) {
+        <a routerLink="/conta">A minha conta</a>
+      } @else {
+        <a routerLink="/entrar">Entrar / Criar conta</a>
+      }
+    </nav>
+  </aside>
+}

@@ -1,0 +1,110 @@
+<div class="container page">
+  <nav class="breadcrumb"><a routerLink="/">Início</a> / <span>{{ title() }}</span></nav>
+  <div class="page-head">
+    <div>
+      <h1>{{ title() }}</h1>
+      @if (campaign(); as c) {
+        <p>{{ c.description }}</p>
+      } @else if (category(); as c) {
+        <p>{{ c.description }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="shop">
+    <aside class="filters" [class.open]="filtersOpen()">
+      <div class="fh">
+        <b>Filtros</b>
+        <button type="button" class="icon-btn sm" (click)="filtersOpen.set(false)" aria-label="Fechar filtros"><app-icon name="x" /></button>
+      </div>
+
+      <div class="fg">
+        <h4>Categoria</h4>
+        <div class="list">
+          <button type="button" [class.on]="!category()" (click)="set({ categoria: null })">Todas</button>
+          @for (c of catalog.activeCategories(); track c.id) {
+            <button type="button" [class.on]="category()?.id === c.id" (click)="set({ categoria: c.slug })">{{ c.name }}</button>
+          }
+        </div>
+      </div>
+
+      <div class="fg">
+        <h4>Preço (MT)</h4>
+        <div class="range">
+          <input class="input sm" type="number" min="0" placeholder="Mín" [value]="num('min') ?? ''" (change)="set({ min: $any($event.target).value })" aria-label="Preço mínimo" />
+          <span>–</span>
+          <input class="input sm" type="number" min="0" placeholder="Máx" [value]="num('max') ?? ''" (change)="set({ max: $any($event.target).value })" aria-label="Preço máximo" />
+        </div>
+        <div class="chips" style="margin-top:8px">
+          <button type="button" class="chip" [class.on]="num('max') === 500 && !num('min')" (click)="setPrice(null, 500)">Até 500</button>
+          <button type="button" class="chip" [class.on]="num('min') === 500 && num('max') === 1000" (click)="setPrice(500, 1000)">500–1.000</button>
+          <button type="button" class="chip" [class.on]="num('min') === 1000 && !num('max')" (click)="setPrice(1000, null)">+1.000</button>
+        </div>
+      </div>
+
+      <div class="fg">
+        <h4>Disponibilidade e ofertas</h4>
+        <label class="check"><input type="checkbox" [checked]="flag('stock')" (change)="toggle('stock')" /> Só com stock</label>
+        <label class="check"><input type="checkbox" [checked]="flag('promo')" (change)="toggle('promo')" /> Em promoção</label>
+        <label class="check"><input type="checkbox" [checked]="flag('mz')" (change)="toggle('mz')" /> Feito em Moçambique</label>
+      </div>
+
+      <div class="fg">
+        <h4>Avaliação</h4>
+        <div class="chips">
+          @for (r of [4, 3]; track r) {
+            <button type="button" class="chip" [class.on]="num('aval') === r" (click)="set({ aval: num('aval') === r ? null : r })">★ {{ r }}+</button>
+          }
+        </div>
+      </div>
+
+      <div class="fg">
+        <h4>Popularidade</h4>
+        <div class="chips">
+          @for (n of [10, 25, 50]; track n) {
+            <button type="button" class="chip" [class.on]="num('pop') === n" (click)="set({ pop: num('pop') === n ? null : n })">{{ n }}+ vendidos</button>
+          }
+        </div>
+      </div>
+
+      <button type="button" class="link small clear" (click)="clear()">Limpar filtros</button>
+      <button type="button" class="btn block show-sm" (click)="filtersOpen.set(false)">Ver {{ results().length }} peças</button>
+    </aside>
+    @if (filtersOpen()) {
+      <div class="overlay show-sm" (click)="filtersOpen.set(false)"></div>
+    }
+
+    <section>
+      <div class="toolbar">
+        <div class="row">
+          <button type="button" class="btn ghost sm show-sm" (click)="filtersOpen.set(true)">
+            <app-icon name="filter" [size]="16" /> Filtros @if (activeCount()) { ({{ activeCount() }}) }
+          </button>
+          <span class="muted small">{{ results().length }} {{ results().length === 1 ? 'peça' : 'peças' }}</span>
+        </div>
+        <select class="select sm sort" [value]="sort()" (change)="set({ ordem: $any($event.target).value })" aria-label="Ordenar">
+          @for (s of sorts; track s.id) {
+            <option [value]="s.id" [selected]="s.id === sort()">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+
+      @if (visible().length) {
+        <div class="grid">
+          @for (v of visible(); track v.product.id) {
+            <app-product-card [view]="v" />
+          }
+        </div>
+        @if (results().length > visible().length) {
+          <div class="center" style="margin-top:22px">
+            <button type="button" class="btn ghost" (click)="limit.set(limit() + 24)">Carregar mais ({{ results().length - visible().length }})</button>
+          </div>
+        }
+      } @else {
+        <app-empty icon="search" title="Nenhuma peça encontrada" text="Tenta ajustar os filtros ou procurar por outra palavra.">
+          <button type="button" class="btn" (click)="clear()">Ver todas as peças</button>
+        </app-empty>
+      }
+    </section>
+  </div>
+</div>
